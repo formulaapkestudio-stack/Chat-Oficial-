@@ -2,7 +2,7 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Fórmula APK - Premium Chat</title>
     <style>
         :root {
@@ -23,8 +23,9 @@
         body { 
             background-color: #d1d7db; 
             display: flex; justify-content: center; align-items: center; 
-            height: 100vh; width: 100vw;
-            padding: 15px; color: #3b4a54; overflow: hidden;
+            height: 100vh; height: 100dvh; /* Suporte para barras de navegadores móveis */
+            width: 100vw;
+            color: #3b4a54; overflow: hidden;
         }
 
         /* Splash Screen */
@@ -45,26 +46,26 @@
 
         /* Login */
         #login-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg-light); display: flex; justify-content: center; align-items: center; z-index: 2000; }
-        .login-box { background: white; padding: 35px; border-radius: 20px; text-align: center; box-shadow: 0 10px 40px rgba(0,0,0,0.08); width: 100%; max-width: 350px; }
+        .login-box { background: white; padding: 35px; border-radius: 20px; text-align: center; box-shadow: 0 10px 40px rgba(0,0,0,0.08); width: 90%; max-width: 350px; }
         .login-box h2 { color: var(--primary); margin-bottom: 20px; font-weight: 800; }
         .login-box input { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid #e1e1e1; margin-bottom: 15px; outline: none; text-align: center; }
         .login-box button { width: 100%; padding: 12px; border-radius: 10px; border: none; background: var(--primary); color: white; font-weight: bold; cursor: pointer; }
 
-        /* App Layout Enquadrado */
+        /* App Layout Ajustado para preencher a tela sem cortar */
         #app { 
-            width: 100%; max-width: 1000px; 
-            height: 94vh;
-            display: none; background: white; border-radius: 12px; overflow: hidden; 
-            box-shadow: 0 15px 50px rgba(0,0,0,0.12); border: 1px solid rgba(0,0,0,0.05);
+            width: 100%; 
+            max-width: 1000px; 
+            height: 100%; /* Ajustado para preencher a altura disponível */
+            display: none; background: white; overflow: hidden; 
+            box-shadow: 0 15px 50px rgba(0,0,0,0.12);
             position: relative;
         }
 
         #main-chat { flex: 1; display: flex; flex-direction: column; background-color: var(--chat-bg); height: 100%; }
         
-        /* Cabeçalho */
-        header { background: rgba(248, 249, 250, 0.9); backdrop-filter: blur(10px); padding: 12px 20px; display: flex; align-items: center; gap: 14px; border-bottom: 1px solid rgba(0,0,0,0.05); z-index: 100; }
-        .header-avatar { width: 40px; height: 40px; background: linear-gradient(135deg, var(--primary), #00bfa5); border-radius: 10px; display: flex; justify-content: center; align-items: center; color: white; font-size: 16px; font-weight: bold; }
-        .header-info p { font-size: 16px; font-weight: 700; color: var(--text-main); }
+        header { background: rgba(248, 249, 250, 0.9); backdrop-filter: blur(10px); padding: 10px 20px; display: flex; align-items: center; gap: 14px; border-bottom: 1px solid rgba(0,0,0,0.05); z-index: 100; min-height: 60px; }
+        .header-avatar { width: 38px; height: 38px; background: linear-gradient(135deg, var(--primary), #00bfa5); border-radius: 10px; display: flex; justify-content: center; align-items: center; color: white; font-size: 14px; font-weight: bold; }
+        .header-info p { font-size: 15px; font-weight: 700; color: var(--text-main); }
         .status-row { display: flex; align-items: center; gap: 10px; margin-top: 1px; }
 
         #notifyBtn {
@@ -77,19 +78,17 @@
         .status-dot { width: 6px; height: 6px; background: #2ecc71; border-radius: 50%; animation: blink 1.5s infinite; }
         @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
 
-        /* Janela de Chat - Estilo Limpo */
-        #chat-window { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 8px; background-image: url('https://www.transparenttextures.com/patterns/cubes.png'); scroll-behavior: smooth; }
+        #chat-window { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 8px; background-image: url('https://www.transparenttextures.com/patterns/cubes.png'); scroll-behavior: smooth; }
         
         .bubble { 
-            max-width: 70%; /* Mensagens mais estreitas */
+            max-width: 80%; 
             padding: 8px 12px; 
             border-radius: 10px; 
-            font-size: 14px; /* Fonte levemente menor */
+            font-size: 14px; 
             line-height: 1.4; 
             position: relative; 
             word-wrap: break-word; 
             box-shadow: 0 1px 2px rgba(0,0,0,0.05); 
-            transition: background 0.4s;
         }
         .highlight { background-color: #fffde7 !important; border: 1px solid #fbc02d; transform: scale(1.01); }
         .sender-name { display: block; font-size: 11px; font-weight: 700; margin-bottom: 3px; color: #d35400; cursor: pointer; }
@@ -104,7 +103,6 @@
             color: #666;
             max-height: 40px;
             overflow: hidden;
-            text-overflow: ellipsis;
         }
         .reply-box strong { display: block; font-size: 10px; color: var(--primary); }
 
@@ -112,16 +110,14 @@
         .received { background-color: var(--received); align-self: flex-start; border-bottom-left-radius: 2px; }
         .time { font-size: 9px; color: var(--text-sub); float: right; margin-top: 4px; margin-left: 8px; }
 
-        /* Rodapé */
-        footer { background-color: #f8f9fa; padding: 12px 20px; display: flex; flex-direction: column; gap: 8px; border-top: 1px solid rgba(0,0,0,0.05); }
-        #reply-preview { background: #ffffff; border-left: 3px solid var(--primary); padding: 10px; border-radius: 8px; display: none; position: relative; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
-        #cancel-reply { position: absolute; right: 12px; top: 10px; cursor: pointer; font-size: 16px; color: #bbb; }
+        footer { background-color: #f8f9fa; padding: 10px 15px; display: flex; flex-direction: column; gap: 8px; border-top: 1px solid rgba(0,0,0,0.05); }
+        #reply-preview { background: #ffffff; border-left: 3px solid var(--primary); padding: 8px; border-radius: 8px; display: none; position: relative; box-shadow: 0 2px 5px rgba(0,0,0,0.05); margin-bottom: 5px; }
+        #cancel-reply { position: absolute; right: 12px; top: 8px; cursor: pointer; font-size: 16px; color: #bbb; }
         
-        .input-row { display: flex; align-items: center; gap: 12px; }
-        .input-area { flex: 1; background-color: #ffffff; border-radius: 10px; padding: 10px 16px; border: 1px solid #e1e1e1; }
-        .input-area input { width: 100%; border: none; outline: none; background: none; font-size: 14px; }
-        .send-btn { background: var(--primary); border: none; width: 42px; height: 42px; border-radius: 10px; color: white; cursor: pointer; display: flex; justify-content: center; align-items: center; transition: 0.2s; }
-        .send-btn:hover { background: var(--primary-dark); transform: scale(1.03); }
+        .input-row { display: flex; align-items: center; gap: 10px; }
+        .input-area { flex: 1; background-color: #ffffff; border-radius: 20px; padding: 8px 16px; border: 1px solid #e1e1e1; }
+        .input-area input { width: 100%; border: none; outline: none; background: none; font-size: 14px; height: 24px; }
+        .send-btn { background: var(--primary); border: none; width: 40px; height: 40px; border-radius: 50%; color: white; cursor: pointer; display: flex; justify-content: center; align-items: center; flex-shrink: 0; }
     </style>
 </head>
 <body>
@@ -189,8 +185,8 @@
       appId: "1:704027996440:web:abf03cf5df02d044eeae6d"
     };
 
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
+    const fbApp = initializeApp(firebaseConfig);
+    const db = getFirestore(fbApp);
     
     let NOME_USUARIO = "";
     const MEU_ID = "user_" + Math.floor(Math.random() * 100000);
