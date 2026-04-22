@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Fórmula APK - Premium Chat</title>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <style>
         :root {
             --primary: #008069;
@@ -168,12 +169,10 @@
     let ULTIMA_RESPOSTA_ID = null;
     let COOLDOWN = false;
 
-    // --- CONFIGURAÇÃO ---
     const NOME_PROTEGIDO = "FORMULA APK";
     const CHAVE_MESTRE = "DAPfy!Admin"; 
     const PALAVRAS_BANIDAS = ["palavrao1", "ofensa2"]; 
 
-    // API do YouTube
     var ytPlayer;
     var tag = document.createElement('script');
     tag.src = "https://www.youtube.com/iframe_api";
@@ -207,11 +206,42 @@
         return text.replace(urlPattern, '<a href="$1" target="_blank">$1</a>');
     }
 
+    // FUNÇÃO DE CONFETES SUAVE
+    function lancarConfetesSuave() {
+        const duration = 4 * 1000;
+        const animationEnd = Date.now() + duration;
+        
+        // Configurações para efeito suave: menos gravidade e partículas menores
+        const defaults = { 
+            startVelocity: 25, 
+            spread: 360, 
+            ticks: 150, 
+            zIndex: 0, 
+            gravity: 0.6, // Queda mais lenta
+            scalar: 0.7   // Partículas menores
+        };
+
+        function randomInRange(min, max) {
+          return Math.random() * (max - min) + min;
+        }
+
+        const interval = setInterval(function() {
+          const timeLeft = animationEnd - Date.now();
+
+          if (timeLeft <= 0) {
+            return clearInterval(interval);
+          }
+
+          const particleCount = 30 * (timeLeft / duration); // Quantidade reduzida
+          confetti({ ...defaults, particleCount, origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 } });
+          confetti({ ...defaults, particleCount, origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 } });
+        }, 350); // Intervalo maior entre disparos
+    }
+
     document.getElementById('enterChatBtn').onclick = () => {
         const nomeInput = document.getElementById('userNameInput').value.trim();
         if(!nomeInput) return;
 
-        // Inicia Playlist NCS
         if(ytPlayer && ytPlayer.playVideo) { ytPlayer.playVideo(); }
 
         if (nomeInput.toUpperCase() === NOME_PROTEGIDO) {
@@ -225,6 +255,10 @@
 
         document.getElementById('login-screen').style.display = "none";
         document.getElementById('app').style.display = "flex";
+        
+        // Ativa os confetes suaves ao entrar
+        lancarConfetesSuave();
+        
         carregarGlobal();
     };
 
