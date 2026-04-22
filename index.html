@@ -23,7 +23,7 @@
         body { 
             background-color: #d1d7db; 
             display: flex; justify-content: center; align-items: center; 
-            height: 100vh; height: 100dvh; /* Suporte para barras de navegadores móveis */
+            height: 100vh; height: 100dvh;
             width: 100vw;
             color: #3b4a54; overflow: hidden;
         }
@@ -51,11 +51,11 @@
         .login-box input { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid #e1e1e1; margin-bottom: 15px; outline: none; text-align: center; }
         .login-box button { width: 100%; padding: 12px; border-radius: 10px; border: none; background: var(--primary); color: white; font-weight: bold; cursor: pointer; }
 
-        /* App Layout Ajustado para preencher a tela sem cortar */
+        /* App Layout */
         #app { 
             width: 100%; 
             max-width: 1000px; 
-            height: 100%; /* Ajustado para preencher a altura disponível */
+            height: 100%; 
             display: none; background: white; overflow: hidden; 
             box-shadow: 0 15px 50px rgba(0,0,0,0.12);
             position: relative;
@@ -167,6 +167,7 @@
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
     import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+    import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
     window.addEventListener('load', () => {
         setTimeout(() => {
@@ -187,11 +188,15 @@
 
     const fbApp = initializeApp(firebaseConfig);
     const db = getFirestore(fbApp);
+    const auth = getAuth(fbApp);
     
     let NOME_USUARIO = "";
     const MEU_ID = "user_" + Math.floor(Math.random() * 100000);
     let REPLY_DATA = null;
     let ULTIMA_RESPOSTA_ID = null;
+
+    // Autenticação Silenciosa (Necessária para as novas regras de segurança)
+    signInAnonymously(auth).catch(err => console.error("Erro Auth:", err));
 
     function linkify(text) {
         const urlPattern = /(\b(https?|ftp|file):\/\/[-A-Z0-9+&@#\/%?=~_|!:,.;]*[-A-Z0-9+&@#\/%=~_|])/ig;
@@ -264,10 +269,29 @@
     async function enviar() {
         const input = document.getElementById('msgInput');
         if (!input.value.trim()) return;
-        const payload = { texto: input.value, nome: NOME_USUARIO, senderId: MEU_ID, timestamp: serverTimestamp() };
+        
+        // Garante que o usuário está autenticado antes de enviar
+        if (!auth.currentUser) {
+            await signInAnonymously(auth);
+        }
+
+        const payload = { 
+            texto: input.value, 
+            nome: NOME_USUARIO, 
+            senderId: MEU_ID, 
+            timestamp: serverTimestamp() 
+        };
+        
         if(REPLY_DATA) payload.replyTo = REPLY_DATA;
-        await addDoc(collection(db, "mensagens_premium"), payload);
-        input.value = ""; REPLY_DATA = null; document.getElementById('reply-preview').style.display = "none";
+        
+        try {
+            await addDoc(collection(db, "mensagens_premium"), payload);
+            input.value = ""; 
+            REPLY_DATA = null; 
+            document.getElementById('reply-preview').style.display = "none";
+        } catch (e) {
+            console.error("Erro ao enviar mensagem: ", e);
+        }
     }
 
     document.getElementById('sendBtn').onclick = enviar;
@@ -275,6 +299,3 @@
 </script>
 </body>
 </html>
-
-
-
