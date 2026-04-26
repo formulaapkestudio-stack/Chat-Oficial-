@@ -119,7 +119,7 @@
                 <p id="reply-text-label" style="font-size:12px; color:#666;"></p>
             </div>
             <div class="input-row">
-                <div class="input-area"><input type="text" id="msgInput" placeholder="Mensagem..." autocomplete="off"></div>
+                <div class="input-area"><input type="text" id="msgInput" placeholder="Mensagem..." autocomplete="off" maxlength="300"></div>
                 <button class="send-btn" id="sendBtn">
                     <svg viewBox="0 0 24 24" width="20" height="20" fill="white"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"></path></svg>
                 </button>
@@ -147,12 +147,11 @@
     const auth = getAuth(fbApp);
     
     let NOME_USUARIO = "";
-    const MEU_ID = "user_" + Math.floor(Math.random() * 1000000);
+    let MEU_ID = ""; // Agora será preenchido pelo Firebase Auth oficial
     let REPLY_DATA = null;
     let ULTIMA_RESPOSTA_ID = null;
     let COOLDOWN = false;
 
-    // Proteção contra nomes mal-intencionados que tentam se passar pela equipe
     const NOMES_BLOQUEADOS = ["FORMULA APK", "ADMIN", "ADM", "SUPORTE", "MODERADOR"];
 
     // YouTube Player
@@ -177,33 +176,39 @@
         }, 1500);
     };
 
-    signInAnonymously(auth);
-
-    // Login logic - Estrutura Original Mantida
-    document.getElementById('enterChatBtn').onclick = () => {
+    // Login logic com Autenticação Real e Segura
+    document.getElementById('enterChatBtn').onclick = async () => {
         const input = document.getElementById('userNameInput').value.trim();
         if(!input) return;
 
-        // Bloqueia se o usuário tentar usar nomes protegidos para enganar outros
         if (NOMES_BLOQUEADOS.includes(input.toUpperCase())) {
             alert("Este nome é reservado pelo sistema.");
             return;
         }
 
-        if(ytPlayer?.playVideo) ytPlayer.playVideo();
+        try {
+            // Autenticação anônima oficial para cumprir as regras do Firestore
+            const userCredential = await signInAnonymously(auth);
+            MEU_ID = userCredential.user.uid;
+            NOME_USUARIO = input;
 
-        NOME_USUARIO = input;
+            if(ytPlayer?.playVideo) ytPlayer.playVideo();
 
-        document.getElementById('login-screen').style.display = "none";
-        document.getElementById('app').style.display = "flex";
-        
-        confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
-        carregarGlobal();
+            document.getElementById('login-screen').style.display = "none";
+            document.getElementById('app').style.display = "flex";
+            
+            confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+            carregarGlobal();
+        } catch (error) {
+            alert("Erro ao conectar ao servidor. Tente novamente.");
+            console.error(error);
+        }
     };
 
-    // Firestore Real-time - Sem funções de Deletar para Segurança
+    // Firestore Real-time com Otimização de Dados (limit 25)
     function carregarGlobal() {
-        const q = query(collection(db, "mensagens_premium"), orderBy("timestamp", "desc"), limit(40));
+        // Reduzido para 25 mensagens para economizar leitura e dados
+        const q = query(collection(db, "mensagens_premium"), orderBy("timestamp", "desc"), limit(25));
         
         onSnapshot(q, (snap) => {
             const win = document.getElementById('chat-window');
@@ -215,7 +220,6 @@
                 const isMe = data.senderId === MEU_ID;
                 const time = data.timestamp ? new Date(data.timestamp.toDate()).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) : "";
                 
-                // Sanitização contra ataques de script (XSS)
                 const textoSeguro = data.texto.replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
                 const div = document.createElement('div');
@@ -239,23 +243,32 @@
 
     async function enviar() {
         const input = document.getElementById('msgInput');
-        if(!input.value.trim() || COOLDOWN) return;
+        const msgTexto = input.value.trim();
+        
+        // Validação de segurança e economia de dados no front-end
+        if(!msgTexto || COOLDOWN || !MEU_ID) return;
 
         const payload = {
-            texto: input.value,
-            nome: NOME_USUARIO,
-            senderId: MEU_ID,
-            timestamp: serverTimestamp()
+            texto: msgTexto.substring(0, 300), // Limite de 300 caracteres para economizar banco
+            nome: NOME_USUARIO.substring(0, 15),
+            senderId: MEU_ID, // UID Oficial do Auth
+            timestamp: serverTimestamp() // Timestamp do servidor (obrigatório pelas regras)
         };
+        
         if(REPLY_DATA) payload.replyTo = REPLY_DATA;
 
         try {
             COOLDOWN = true;
             await addDoc(collection(db, "mensagens_premium"), payload);
-            input.value = ""; REPLY_DATA = null;
+            input.value = ""; 
+            REPLY_DATA = null;
             document.getElementById('reply-preview').style.display = "none";
-            setTimeout(() => COOLDOWN = false, 2000); // 2s anti-spam
-        } catch(e) { COOLDOWN = false; }
+            // Cooldown de 3s para evitar flood e economizar escrita
+            setTimeout(() => COOLDOWN = false, 3000); 
+        } catch(e) { 
+            console.error("Erro ao enviar:", e);
+            COOLDOWN = false; 
+        }
     }
 
     window.setReply = (n, t) => {
